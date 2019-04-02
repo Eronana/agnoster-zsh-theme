@@ -28,6 +28,8 @@ typeset -aHg AGNOSTER_PROMPT_SEGMENTS=(
     prompt_status
     prompt_context
     prompt_virtualenv
+    prompt_exec_time
+    prompt_time
     prompt_dir
     prompt_git
     prompt_end
@@ -142,6 +144,26 @@ prompt_virtualenv() {
   fi
 }
 
+prompt_time() {
+  prompt_segment cyan black '%*'
+}
+
+prompt_exec_time() {
+  local duration
+  local seconds
+  typeset -F 2 seconds
+
+  if (( AGNOSTER_EXEC_DURATION > 3600 )); then
+    duration=$(TZ=GMT; strftime '%H:%M:%S' $(( int(rint(AGNOSTER_EXEC_DURATION)) )))
+  elif (( AGNOSTER_EXEC_DURATION > 60 )); then
+    duration=$(TZ=GMT; strftime '%M:%S' $(( int(rint(AGNOSTER_EXEC_DURATION)) )))
+  elif (( AGNOSTER_EXEC_DURATION > 0.1 )); then
+    seconds=AGNOSTER_EXEC_DURATION
+    duration="${seconds}s"
+  fi
+  [[ -n $duration ]] && prompt_segment red black $duration
+}
+
 ## Main prompt
 prompt_agnoster_main() {
   RETVAL=$?
@@ -152,17 +174,29 @@ prompt_agnoster_main() {
 }
 
 prompt_agnoster_precmd() {
+  AGNOSTER_EXEC_DURATION=$((EPOCHREALTIME - AGNOSTER_EXEC_START_TIME))
+  AGNOSTER_EXEC_START_TIME=0x7FFFFFFF
   vcs_info
   PROMPT='%{%f%b%k%}$(prompt_agnoster_main) '
 }
 
+prompt_agnoster_preexec() {
+  AGNOSTER_EXEC_START_TIME=$EPOCHREALTIME
+}
+
 prompt_agnoster_setup() {
+  AGNOSTER_EXEC_START_TIME=0x7FFFFFFF
+
+  zmodload zsh/datetime
+  zmodload zsh/mathfunc
+
   autoload -Uz add-zsh-hook
   autoload -Uz vcs_info
 
   prompt_opts=(cr subst percent)
 
   add-zsh-hook precmd prompt_agnoster_precmd
+  add-zsh-hook preexec prompt_agnoster_preexec
 
   zstyle ':vcs_info:*' enable git
   zstyle ':vcs_info:*' check-for-changes false
