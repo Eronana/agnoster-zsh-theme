@@ -87,7 +87,7 @@ prompt_context() {
   local user=`whoami`
 
   if [[ "$user" != "$DEFAULT_USER" || -n "$SSH_CONNECTION" ]]; then
-    prompt_segment $PRIMARY_FG default " %(!.%{%F{yellow}%}.)$user@%m "
+    prompt_segment $PRIMARY_FG default "%(!.%{%F{yellow}%}.)$user@%m "
   fi
 }
 
@@ -151,13 +151,13 @@ prompt_time() {
 prompt_exec_time() {
   local duration
   local seconds
-  typeset -F 2 seconds
+  typeset -F $AGNOSTER_EXEC_TIME_PRECISION seconds
 
   if (( AGNOSTER_EXEC_DURATION > 3600 )); then
     duration=$(TZ=GMT; strftime '%H:%M:%S' $(( int(rint(AGNOSTER_EXEC_DURATION)) )))
   elif (( AGNOSTER_EXEC_DURATION > 60 )); then
     duration=$(TZ=GMT; strftime '%M:%S' $(( int(rint(AGNOSTER_EXEC_DURATION)) )))
-  elif (( AGNOSTER_EXEC_DURATION > 0.1 )); then
+  elif (( AGNOSTER_EXEC_DURATION > $AGNOSTER_EXEC_TIME_THRESHOLD )); then
     seconds=AGNOSTER_EXEC_DURATION
     duration="${seconds}s"
   fi
@@ -186,6 +186,8 @@ prompt_agnoster_preexec() {
 
 prompt_agnoster_setup() {
   AGNOSTER_EXEC_START_TIME=0x7FFFFFFF
+  AGNOSTER_EXEC_TIME_THRESHOLD=2
+  AGNOSTER_EXEC_TIME_PRECISION=2
 
   zmodload zsh/datetime
   zmodload zsh/mathfunc
