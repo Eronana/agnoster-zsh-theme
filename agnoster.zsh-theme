@@ -145,7 +145,7 @@ prompt_virtualenv() {
 }
 
 prompt_time() {
-  prompt_segment cyan black '%*'
+  prompt_segment cyan black ' %* '
 }
 
 prompt_exec_time() {
@@ -161,12 +161,13 @@ prompt_exec_time() {
     seconds=AGNOSTER_EXEC_DURATION
     duration="${seconds}s"
   fi
-  [[ -n $duration ]] && prompt_segment red black $duration
+  [[ -n $duration ]] && prompt_segment red black " $duration "
 }
 
 ## Main prompt
 prompt_agnoster_main() {
   RETVAL=$?
+  [ "$NON_EMPTY_COMMAND" = false ] && RETVAL=0
   CURRENT_BG='NONE'
   for prompt_segment in "${AGNOSTER_PROMPT_SEGMENTS[@]}"; do
     [[ -n $prompt_segment ]] && $prompt_segment
@@ -176,18 +177,22 @@ prompt_agnoster_main() {
 prompt_agnoster_precmd() {
   AGNOSTER_EXEC_DURATION=$((EPOCHREALTIME - AGNOSTER_EXEC_START_TIME))
   AGNOSTER_EXEC_START_TIME=0x7FFFFFFF
+  NON_EMPTY_COMMAND=$PREEXEC_CALLED
+  PREEXEC_CALLED=false
   vcs_info
   PROMPT='%{%f%b%k%}$(prompt_agnoster_main) '
 }
 
 prompt_agnoster_preexec() {
   AGNOSTER_EXEC_START_TIME=$EPOCHREALTIME
+  PREEXEC_CALLED=true
 }
 
 prompt_agnoster_setup() {
   AGNOSTER_EXEC_START_TIME=0x7FFFFFFF
   AGNOSTER_EXEC_TIME_THRESHOLD=2
   AGNOSTER_EXEC_TIME_PRECISION=2
+  PREEXEC_CALLED=false
 
   zmodload zsh/datetime
   zmodload zsh/mathfunc
